@@ -1,67 +1,93 @@
-
-from typing import Any
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+from typing import Optional
 import torch
-import torch.nn.functional as F
-import torchvision.datasets as datasets
+from torch.utils.data import DataLoader, Subset
 import torchvision.transforms as transforms
-
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split
+import torchvision.datasets as datasets
 import pytorch_lightning as pl
+import numpy as np
+import os
 
-class MnistDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir, batch_size, num_workers):
+class SemiSupervisedMnistDataModule(pl.LightningDataModule):
+    def __init__(
+        self,
+        data_dir: str,
+        batch_size: int,
+        num_workers: int = 4,
+        label_pct: float = 0.3,
+        seed: int = 42,
+    ):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
-    # #Here we can donwload the data
-    # def prepare_data(self):
-    #     datasets.MNIST(root=self.data_dir, train=True, download=True)
-    #     datasets.MNIST(root=self.data_dir, train=False, download=True)
-    #Here we can load the data
-    def setup(self, stage: str):
-        # entire_dataset = datasets.MNIST(
-        #     root=self.data_dir,
-        #     train=True,
-        #     transform=transforms.ToTensor(),
-        #     download=False
-        # )
-        # self.train_ds, self.val_ds = random_split(entire_dataset, [50000, 10000]) 
+        self.label_pct = label_pct
+        self.seed = seed
 
-        # self.test_ds = datasets.MNIST(
-        #     root=self.data_dir,
-        #     train=False,
-        #     transform=transforms.ToTensor(),
-        #     download=False
-        # )
-        self.train_ds = datasets.ImageFolder(root=self.data_dir + 'train')
-        self.val_ds = datasets.ImageFolder(root=self.data_dir + 'val')
-        self.test_ds = datasets.ImageFolder(root=self.data_dir + 'test')
-        
+        self.transform = transforms.Compose([
+            transforms.Resize((128, 128)), 
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])  
+        ])
 
-    def train_dataloader(self):
+    def setup(self, stage: Optional[str] = None):
+        full_dataset = datasets.ImageFolder(
+            root=os.path.join(self.data_dir, 'train'),
+            transform=self.transform
+        )
+
+        # Shuffle indices
+        total_size = len(full_dataset)
+        indices = np.arange(total_size)
+        np.random.seed(self.seed)
+        np.random.shuffle(indices)
+
+        # Split indices
+        label_count = int(total_size * self.label_pct)
+        labeled_indices = indices[:label_count]
+        unlabeled_indices = indices[label_count:]
+
+        self.labeled_dataset = Subset(full_dataset, labeled_indices)
+        self.unlabeled_dataset = Subset(full_dataset, unlabeled_indices)
+
+        # Test y val directamente
+        self.val_dataset = datasets.ImageFolder(
+            root=os.path.join(self.data_dir, 'valid'),
+            transform=self.transform
+        )
+
+        self.test_dataset = datasets.ImageFolder(
+            root=os.path.join(self.data_dir, 'test'),
+            transform=self.transform
+        )
+
+    def labeled_dataloader(self):
         return DataLoader(
-            self.train_ds,
+            self.labeled_dataset,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=True
         )
-    
+
+    def unlabeled_dataloader(self):
+        return DataLoader(
+            self.unlabeled_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            shuffle=True
+        )
+
     def val_dataloader(self):
         return DataLoader(
-            self.val_ds,
+            self.val_dataset,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False
         )
-    
+
     def test_dataloader(self):
         return DataLoader(
-            self.test_ds,
+            self.test_dataset,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             shuffle=False
         )
-  
