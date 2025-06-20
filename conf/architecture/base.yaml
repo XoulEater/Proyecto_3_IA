@@ -1,0 +1,4 @@
+# notebooks/conf/architecture/base.yaml
+_name_: base
+modify_unet: false
+justification: ""

@@ -1,0 +1,4 @@
+# notebooks/conf/classifier/frozen.yaml
+_name_: frozen
+use_autoencoder: true
+freeze_encoder: true
