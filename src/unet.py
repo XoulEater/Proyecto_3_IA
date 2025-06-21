@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-import torchmetrics
+from torchvision.utils import make_grid
+import wandb
 
 class DoubleConv(nn.Module):
     """(Conv => ReLU) * 2"""
@@ -79,6 +80,31 @@ class UNetAutoencoder(pl.LightningModule):
         x_hat = self.forward(x)
         loss = self.loss_fn(x_hat, x)
         self.log("test_loss", loss, on_step=False, on_epoch=True)
+
+        if batch_idx == 0:
+            num_imgs = min(8, x.size(0))
+
+            # Concatenar cada par (input, output) horizontalmente
+            comparison_imgs = []
+            for i in range(num_imgs):
+                inp = x[i].detach().cpu()
+                out = x_hat[i].detach().cpu()
+
+                # Normalizar si es necesario (por ejemplo si usaste tanh)
+                inp = (inp + 1) / 2 if inp.min() < 0 else inp
+                out = (out + 1) / 2 if out.min() < 0 else out
+
+                # Concatenar lado a lado (C, H, 2*W)
+                pair = torch.cat([inp, out], dim=2)
+                comparison_imgs.append(pair)
+
+            # Crear una grilla con todas las comparaciones (N, C, H, W)
+            grid = make_grid(comparison_imgs, nrow=1)  # una imagen por fila
+            self.logger.experiment.log({
+                "Reconstruction Grid": wandb.Image(grid, caption="Input | Reconstruction"),
+                "global_step": self.global_step
+            })
+
         return loss
 
     def configure_optimizers(self):
