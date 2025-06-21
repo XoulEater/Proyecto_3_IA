@@ -1,0 +1,5 @@
+# notebooks/conf/architecture/unet_modificado.yaml
+_name_: unet_modificado
+modify_unet: true
+# aquí tu justificación del cambio
+justification: "He ajustado las conexiones skip de U-Net para mejorar la resolución espacial."

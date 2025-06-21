@@ -1,0 +1,16 @@
+# conf/config.yaml
+defaults:
+  - optimizer: adam      # usa adam por defecto
+  - _self_
+  - autoencoder: defaults      # cargará autoencoder/defaults.yaml
+  - classifier: frozen         # cargará classifier/frozen.yaml
+  - architecture: base         # cargará architecture/base.yaml
+# Parámetros generales
+seed: 42
+batch_size: 64
+num_workers: 4
+label_pct: 0.3
+max_epochs: 20
+early_stop_patience: 5
+project_name: "autoencoder-clasificador-mnist"
+data_dir: ../data

@@ -1,0 +1,4 @@
+# notebooks/conf/autoencoder/defaults.yaml
+_name_: defaults
+# % de datos usados para pre-entreno
+pretrain_pct: 0.7

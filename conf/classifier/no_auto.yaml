@@ -1,0 +1,4 @@
+# notebooks/conf/classifier/no_auto.yaml
+_name_: no_auto
+use_autoencoder: false
+freeze_encoder: false
