@@ -1,7 +1,7 @@
 # conf/config.yaml
 defaults:
-  - optimizer: adam      # usa adam por defecto
-  - _self_
+    - optimizer: adam # usa adam por defecto
+    - _self_
 
 # Parámetros generales
 seed: 42

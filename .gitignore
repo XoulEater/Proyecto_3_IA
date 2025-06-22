@@ -2,7 +2,8 @@
 butterflies/
 data/
 wandb/
-output/
+output/checkpoints/
 
 __pycache__/
+
 
