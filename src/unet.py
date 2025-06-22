@@ -3,6 +3,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 from torchvision.utils import make_grid
 import wandb
+import copy
 
 class DoubleConv(nn.Module):
     """(Conv => ReLU) * 2"""
@@ -106,10 +107,11 @@ class UNetAutoencoder(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
     def get_encoder(self):
-        return nn.Sequential(
+        encoder = nn.Sequential(
             self.enc1,
             self.pool1,
             self.enc2,
             self.pool2,
             self.bottleneck
         )
+        return copy.deepcopy(encoder)

@@ -6,7 +6,6 @@ import torchmetrics
 class ClassifierA(pl.LightningModule):
     def __init__(self, encoder: nn.Module, latent_dim=128, num_classes=30, learning_rate=1e-3):
         super().__init__()
-        self.save_hyperparameters(ignore=['encoder'])  # Guarda hiperparámetros útiles, pero ignora el encoder
 
         self.encoder = encoder  # Encoder no preentrenado
         self.classifier = nn.Sequential(
@@ -47,4 +46,4 @@ class ClassifierA(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
