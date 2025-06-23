@@ -1,0 +1,15 @@
+# conf/config.yaml
+defaults:
+    - optimizer: adam # usa adam por defecto
+    - _self_
+
+# Parámetros generales
+seed: 42
+batch_size: 64
+num_workers: 4
+label_pct: 0.3
+max_epochs: 20
+early_stop_patience: 3
+learning_rate: 5e-4
+project_name: "autoencoder-clasificador"
+data_dir: ../data

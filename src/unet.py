@@ -66,15 +66,7 @@ class UNetAutoencoder(pl.LightningModule):
         x, _ = batch
         x_hat = self.forward(x)
         loss = self.loss_fn(x_hat, x)
-        self.log("train_loss", loss, on_step=False, on_epoch=True)
-        return loss
 
-    def validation_step(self, batch, batch_idx):
-        x, _ = batch
-        x_hat = self.forward(x)
-        loss = self.loss_fn(x_hat, x)
-
-        # Log images to Weights & Biases
         if batch_idx == 0:
             # Take up to 8 images for visualization
             num_images = min(8, x.size(0))
@@ -88,19 +80,22 @@ class UNetAutoencoder(pl.LightningModule):
             grid = make_grid(comparison, nrow=2, normalize=True, value_range=(0, 1))
 
             self.logger.experiment.log({
-            "val_images": wandb.Image(grid, caption="Top: Original, Bottom: Reconstruction (pairs left-to-right)")
+            "val_images": wandb.Image(grid, caption="Validation Images and Reconstructions")
             })
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        x, _ = batch
+        x_hat = self.forward(x)
+        loss = self.loss_fn(x_hat, x)
 
         self.log("val_loss", loss, on_step=False, on_epoch=True)
-
         return loss
 
     def test_step(self, batch, batch_idx):
         x, _ = batch
         x_hat = self.forward(x)
         loss = self.loss_fn(x_hat, x)
-        self.log("test_loss", loss, on_step=False, on_epoch=True)
-
         return loss
 
     def configure_optimizers(self):

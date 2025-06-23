@@ -1,0 +1,5 @@
+# conf/optimizer/sgd.yaml
+_name_: sgd
+optimizer:
+  name: SGD
+  momentum: 0.9

@@ -1,5 +1,0 @@
-# conf/optimizer/adam.yaml
-_name_: adam
-optimizer:
-  name: Adam
-  weight_decay: 0.0001

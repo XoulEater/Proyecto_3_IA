@@ -1,34 +1,68 @@
-from typing import Any
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
-import torch
-import torch.nn.functional as F
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
-
-from torch import nn, optim
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-from torch.utils.data import random_split
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 import pytorch_lightning as pl
-import torchmetrics
-from model import UNetAutoencoder
-from dataset import MnistDataModule
-import Proyecto_3_IA.src.config as config
-from callbacks import MyPrintingCallback, EarlyStopping
-import torch.multiprocessing
 
 
-if __name__ == "__main__":
-    torch.multiprocessing.set_sharing_strategy('file_system')
-    myDataModule = MnistDataModule(data_dir=config.DATA_DIR, batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)
-    # Initialize network
-    model = UNetAutoencoder(in_channels=1, base_channels=32, latent_dim=128, learning_rate=1e-3)
+# Logger con Weights & Biases
+def train(
+    model,
+    train_dataloaders,
+    datamodule,
+    project_name,
+    run_name,
+    max_epochs,
+    early_stop_patience,
+    checkpoint_dir,
+):
+    wandb_logger = WandbLogger(project=project_name, log_model=True)
+    wandb_logger.experiment.name = run_name
+    wandb_logger.experiment.save()
 
-    trainer = pl.Trainer(accelerator=config.ACCELERATOR,
-                         min_epochs=1,
-                         max_epochs=config.NUM_EPOCHS,
-                         precision=config.PRECISION,
-                         callbacks=[MyPrintingCallback(), EarlyStopping(monitor='val_loss')])
-    trainer.fit(model, myDataModule)
-    trainer.validate(model, myDataModule)
-    trainer.test(model, myDataModule)
+    early_stop_callback = EarlyStopping(
+        monitor="val_loss",
+        patience=early_stop_patience,
+        verbose=True,
+        mode="min"
+    )
+
+    checkpoint_callback = ModelCheckpoint(
+        monitor="val_loss",
+        save_top_k=1,
+        mode="min",
+        dirpath=checkpoint_dir,
+        filename="{epoch:02d}-{val_loss:.8f}",
+    )
+
+    trainer = pl.Trainer(
+        max_epochs=max_epochs,
+        logger=wandb_logger,
+        callbacks=[early_stop_callback, checkpoint_callback],
+        accelerator="auto",
+        devices="auto",
+        log_every_n_steps=3
+    )
+
+    trainer.fit(model, train_dataloaders=train_dataloaders, val_dataloaders=datamodule.val_dataloader())
+    trainer.test(model, dataloaders=datamodule.test_dataloader())
+    wandb_logger.experiment.finish()
+
+# Example usage:
+# if __name__ == "__main__":
+#     from dataset import SemiSupervisedMnistDataModule
+#     from unet import UNet
+#     from classifier import Classifier
+#     import os
+#     data_dir = "path/to/data"
+#     batch_size = 32
+#     dm = SemiSupervisedMnistDataModule(data_dir, batch_size)
+#     model = UNet()
+#     classifier = Classifier()
+#     train_autoencoder(
+#         model=model,
+#         datamodule=dm,
+#         project_name="autoencoder_project",
+#         run_name="autoencoder_run",
+#         max_epochs=50,
+#         early_stop_patience=5,
+#         checkpoint_dir=os.path.join("checkpoints", "autoencoder")
+#     )
